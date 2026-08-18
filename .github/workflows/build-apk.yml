@@ -49,11 +49,12 @@ jobs:
 
       - name: Create temporary debug keystore
         run: |
+          mkdir -p "$HOME/.android"
           if [ -f "./debug.keystore" ]; then
             echo "debug.keystore already exists."
           else
             echo "debug.keystore not found. Generating temporary debug keystore..."
-            keytool -genkey -v \
+            keytool -genkeypair -v \
               -keystore ./debug.keystore \
               -storepass android \
               -alias androiddebugkey \
@@ -67,7 +68,14 @@ jobs:
             echo "Error: Failed to create or locate debug.keystore."
             exit 1
           fi
-          echo "Debug keystore confirmed."
+          cp ./debug.keystore "$HOME/.android/debug.keystore"
+          echo "Debug keystore confirmed at ./debug.keystore and $HOME/.android/debug.keystore"
+
+          # Accept Android SDK licenses if sdkmanager is available on runner
+          if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            echo "Accepting Android SDK licenses..."
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+          fi
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace --no-daemon
