@@ -41,6 +41,15 @@ jobs:
           fi
           cp ~/.android/debug.keystore ./debug.keystore 2>/dev/null || true
 
+      - name: Ensure valid Gradle wrapper JAR
+        run: |
+          mkdir -p gradle/wrapper
+          if ! jar tf gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
+            echo "Gradle wrapper JAR is missing or corrupted. Restoring official Gradle 9.3.1 wrapper..."
+            curl -sLfo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradle/wrapper/gradle-wrapper.jar
+          fi
+          echo "Verified gradle-wrapper.jar successfully."
+
       - name: Grant execute permissions for Gradlew
         run: chmod +x ./gradlew
 

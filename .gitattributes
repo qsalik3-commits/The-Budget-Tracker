@@ -1,0 +1,6 @@
+# Prevent corruption of binary files during git sync
+*.jar binary
+*.apk binary
+*.keystore binary
+*.png binary
+*.jpg binary
