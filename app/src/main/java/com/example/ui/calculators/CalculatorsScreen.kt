@@ -20,14 +20,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BudgetViewModel
 import com.example.ui.CurrencyInfo
-import kotlinx.coroutines.launch
 import kotlin.math.pow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculatorsScreen(viewModel: BudgetViewModel) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Normal", "SIP", "EMI", "AI Forecast & Split")
+    val tabs = listOf("Normal", "SIP", "EMI")
     val selectedCurrency by viewModel.selectedCurrency.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -79,7 +78,6 @@ fun CalculatorsScreen(viewModel: BudgetViewModel) {
                     0 -> NormalCalculator()
                     1 -> SIPCalculator(currency = selectedCurrency)
                     2 -> EMICalculator(currency = selectedCurrency)
-                    3 -> AiToolsTab(viewModel = viewModel, currency = selectedCurrency)
                 }
             }
         }
@@ -415,109 +413,6 @@ fun ResultRow(label: String, value: String, isTotal: Boolean = false) {
             fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Medium,
             color = MaterialTheme.colorScheme.onPrimaryContainer
         )
-    }
-}
-
-@Composable
-fun AiToolsTab(viewModel: BudgetViewModel, currency: CurrencyInfo) {
-    var query by remember { mutableStateOf("") }
-    var result by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var selectedTool by remember { mutableStateOf(0) } // 0: Forecast, 1: Split
-
-    val coroutineScope = rememberCoroutineScope()
-    val transactions by viewModel.allTransactions.collectAsStateWithLifecycle()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = selectedTool == 0,
-                onClick = { selectedTool = 0; result = ""; query = "" },
-                label = { Text("Scenario Simulator") }
-            )
-            FilterChip(
-                selected = selectedTool == 1,
-                onClick = { selectedTool = 1; result = ""; query = "" },
-                label = { Text("Bill Splitter") }
-            )
-        }
-
-        val placeholder = if (selectedTool == 0) {
-            "e.g., What happens to my savings goal if I rent a $1200 apartment instead of $1000?"
-        } else {
-            "e.g., Dinner was $120. Alice had steak $50, Bob had pasta $30, we split the $40 wine."
-        }
-
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text(if (selectedTool == 0) "Ask a 'What if' question" else "Describe the shared bill") },
-            placeholder = { Text(placeholder) },
-            modifier = Modifier.fillMaxWidth().height(120.dp),
-            maxLines = 5
-        )
-
-        Button(
-            onClick = {
-                if (query.isBlank()) return@Button
-                isLoading = true
-                coroutineScope.launch {
-                    val apiKey = com.example.BuildConfig.GEMINI_API_KEY
-                    if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
-                        result = "Please set your Gemini API key in AI Studio Secrets to use AI tools."
-                        isLoading = false
-                        return@launch
-                    }
-
-                    val contextText = if (selectedTool == 0) {
-                        val income = transactions.filter { it.isIncome }.sumOf { it.amount }
-                        val expense = transactions.filter { !it.isIncome }.sumOf { it.amount }
-                        "Context: User's total income is ${currency.format(income)}, total expenses are ${currency.format(expense)}. Currency is ${currency.symbol}."
-                    } else {
-                        "Context: Extract who owes what from the following bill description. Determine exact amounts per person. Currency is ${currency.symbol}."
-                    }
-
-                    val prompt = "$contextText\n\nUser request: $query\nProvide a concise, professional, and mathematically accurate financial breakdown."
-                    
-                    try {
-                        val request = com.example.gemini.GenerateContentRequest(
-                            contents = listOf(com.example.gemini.Content(parts = listOf(com.example.gemini.Part(text = prompt))))
-                        )
-                        val response = com.example.gemini.RetrofitClient.service.generateContent(apiKey, request)
-                        result = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim() ?: "No response from AI."
-                    } catch (e: Exception) {
-                        result = "Error connecting to AI: ${e.message}"
-                    }
-                    isLoading = false
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(if (selectedTool == 0) "Simulate Scenario" else "Split Bill")
-            }
-        }
-
-        if (result.isNotBlank()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("AI Response", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(result, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                }
-            }
-        }
     }
 }
 
