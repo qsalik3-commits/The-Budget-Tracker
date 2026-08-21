@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,25 +28,30 @@ import com.example.ui.home.DashboardScreen
 import com.example.ui.reports.ReportsScreen
 import com.example.ui.goals.GoalsScreen
 import com.example.ui.calculators.CalculatorsScreen
+import com.example.ui.games.MoneyGamesHubScreen
+import com.example.ui.games.MoneyGamesViewModel
+import com.example.ui.games.screens.*
 
 sealed class Screen(val route: String, val title: String, val icon: @Composable () -> Unit) {
     object Dashboard : Screen("dashboard", "Dashboard", { Icon(Icons.Filled.Home, contentDescription = "Dashboard") })
     object Reports : Screen("reports", "Reports", { Icon(Icons.Filled.Analytics, contentDescription = "Reports") })
     object Goals : Screen("goals", "Goals", { Icon(Icons.Filled.Flag, contentDescription = "Goals") })
     object Calculators : Screen("calculators", "Tools", { Icon(Icons.Filled.Calculate, contentDescription = "Tools") })
+    object MoneyGames : Screen("money_games", "Games 🎮", { Icon(Icons.Filled.SportsEsports, contentDescription = "Money Games") })
 }
 
 @Composable
 fun AppNavigation(
     modifier: Modifier = Modifier,
     budgetViewModel: BudgetViewModel,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    gamesViewModel: MoneyGamesViewModel
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val items = listOf(Screen.Dashboard, Screen.Reports, Screen.Goals, Screen.Calculators)
+    val items = listOf(Screen.Dashboard, Screen.Reports, Screen.Goals, Screen.Calculators, Screen.MoneyGames)
     val bottomBarDestination = items.any { it.route == currentDestination?.route }
 
     Scaffold(
@@ -61,7 +68,7 @@ fun AppNavigation(
                         NavigationBarItem(
                             modifier = Modifier.padding(top = 4.dp),
                             icon = screen.icon,
-                            label = { Text(screen.title) },
+                            label = { Text(screen.title, fontSize = 11.sp) },
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = androidx.compose.ui.graphics.Color(0xFF1D192B),
@@ -105,6 +112,48 @@ fun AppNavigation(
             }
             composable(Screen.Calculators.route) {
                 CalculatorsScreen(viewModel = budgetViewModel)
+            }
+            composable(Screen.MoneyGames.route) {
+                MoneyGamesHubScreen(
+                    viewModel = gamesViewModel,
+                    onNavigateToGame = { gameRoute -> navController.navigate(gameRoute) }
+                )
+            }
+            composable("game_smart_spending") {
+                SmartSpendingGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("game_save_goal") {
+                SaveTheGoalGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("game_budget_detective") {
+                BudgetDetectiveGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("game_quick_quiz") {
+                QuickQuizGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("game_need_want") {
+                NeedOrWantGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("game_money_city") {
+                MoneyCityGameScreen(
+                    viewModel = gamesViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable("add_transaction") {
                 AddTransactionScreen(

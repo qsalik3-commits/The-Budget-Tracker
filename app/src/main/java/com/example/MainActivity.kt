@@ -13,6 +13,8 @@ import com.example.ui.AppNavigation
 import com.example.ui.BudgetViewModel
 import com.example.ui.BudgetViewModelFactory
 import com.example.ui.ChatViewModel
+import com.example.ui.games.MoneyGamesViewModel
+import com.example.ui.games.MoneyGamesViewModelFactory
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,17 +23,20 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     val app = application as MainApplication
     val factory = BudgetViewModelFactory(app.repository)
+    val gamesFactory = MoneyGamesViewModelFactory(app.gameRepository)
     
     setContent {
       MyApplicationTheme {
         val budgetViewModel: BudgetViewModel = viewModel(factory = factory)
         val chatViewModel: ChatViewModel = viewModel(factory = factory)
+        val gamesViewModel: MoneyGamesViewModel = viewModel(factory = gamesFactory)
         
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
           AppNavigation(
             modifier = Modifier.padding(innerPadding),
             budgetViewModel = budgetViewModel,
-            chatViewModel = chatViewModel
+            chatViewModel = chatViewModel,
+            gamesViewModel = gamesViewModel
           )
         }
       }
